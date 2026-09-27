@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProntoPraIA — Seu e-commerce legível para Agentes de IA</title>
+<meta name="description" content="Descubra se seu e-commerce está pronto para ser recomendado por ChatGPT, Gemini e outros agentes de IA. Ferramenta gratuita de diagnóstico.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>◆</text></svg>">
+<style>
+  /* ===== Reset e variáveis de tema ===== */
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#080c11; --bg-2:#0d131b; --card:#111a23; --card-2:#16212c;
+    --border:#22303f; --text:#e7edf3; --muted:#8ea3b8;
+    --lime:#b6f542; --lime-dim:#8fc72f; --cyan:#2ed6e6;
+    --danger:#ff6b6b; --warn:#ffb347; --radius:16px;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background: radial-gradient(1100px 600px at 85% -10%, rgba(46,214,230,.10), transparent 60%),
+                radial-gradient(900px 500px at 0% 0%, rgba(182,245,66,.09), transparent 55%),
+                var(--bg);
+    color:var(--text); line-height:1.55; min-height:100vh; padding-bottom:60px;
+  }
+  a{color:var(--cyan);text-decoration:none}
+  h1,h2,h3{line-height:1.2}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+  /* ===== Cabeçalho ===== */
+  header.site{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(8,12,17,.85);border-bottom:1px solid var(--border);}
+  .head-row{display:flex;align-items:center;gap:18px;padding:14px 0;flex-wrap:wrap}
+  .logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:23px;letter-spacing:-.5px;white-space:nowrap}
+  .logo .dot{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--lime),var(--cyan));color:#06121a;font-size:18px;font-weight:900;box-shadow:0 0 18px rgba(182,245,66,.35);}
+  .logo .ia{background:linear-gradient(90deg,var(--lime),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ===== Seções da Landing Page ===== */
+  .hero{text-align:center;padding:80px 20px 60px;max-width:800px;margin:0 auto;}
+  .hero h1{font-size:clamp(32px, 5vw, 52px);font-weight:900;letter-spacing:-1.5px;margin-bottom:20px;}
+  .hero h1 span{background:linear-gradient(90deg,var(--lime),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero p{font-size:18px;color:var(--muted);margin-bottom:32px;max-width:600px;margin-left:auto;margin-right:auto;}
+  .btn-cta{display:inline-block;background:linear-gradient(135deg,var(--lime),var(--cyan));color:#06121a;font-weight:800;font-size:16px;padding:16px 32px;border-radius:12px;text-decoration:none;transition:transform .12s,box-shadow .15s;box-shadow:0 8px 22px rgba(46,214,230,.25); border:none; cursor:pointer;}
+  .btn-cta:hover{transform:translateY(-2px);filter:brightness(1.06);}
+
+  .problem-solution{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:60px 0;align-items:center;}
+  .ps-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;}
+  .ps-card h3{font-size:22px;margin-bottom:12px;color:var(--danger);}
+  .ps-card h3.green{color:var(--lime);}
+  .ps-card ul{list-style:none;margin-top:16px;}
+  .ps-card li{margin-bottom:10px;color:var(--muted);display:flex;gap:10px;align-items:flex-start;}
+  .ps-card li::before{content:"✗";color:var(--danger);font-weight:900;}
+  .ps-card.green li::before{content:"✓";color:var(--lime);}
+
+  /* ===== Estilos do Formulário de Contato ===== */
+  .contact-section{margin:60px auto;max-width:900px;}
+  .contact-banner{background:linear-gradient(135deg, rgba(182,245,66,0.1), rgba(46,214,230,0.1));border:1px solid var(--lime);border-radius:var(--radius);padding:40px;}
+  .contact-banner h2{font-size:28px;margin-bottom:12px;text-align:center;}
+  .contact-banner > p{text-align:center;color:var(--muted);margin-bottom:30px;max-width:700px;margin-left:auto;margin-right:auto;}
+  .form-grid{max-width:650px;margin:0 auto;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;}
+  .form-field{margin-bottom:15px;}
+  .form-field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600;}
+  .form-field input, .form-field select{width:100%;background:#0a1219;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+  .form-field input:focus, .form-field select:focus{outline:none;border-color:var(--lime);box-shadow:0 0 0 3px rgba(182,245,66,.15)}
+  .form-field .req{color:var(--lime);}
+  .honeypot{display:none;}
+  .form-note{text-align:center;font-size:12px;color:var(--muted);margin-top:15px;}
+
+  /* Mensagem de Sucesso do Formulário */
+  #success-message{text-align:center; padding: 40px 20px;}
+  #success-message .emoji{font-size: 64px; margin-bottom: 20px;}
+  #success-message h2{font-size: 28px; margin-bottom: 12px; color: var(--lime);}
+  #success-message p{color: var(--muted); font-size: 16px; margin-bottom: 20px;}
+
+  /* ===== Estilos Originais do App ===== */
+  .stats{padding:26px 0 6px}
+  .stats h2{font-size:15px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin-bottom:14px;font-weight:700;text-align:center;}
+  .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .stat{background:linear-gradient(160deg,var(--card),var(--bg-2));border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .stat::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,var(--lime),var(--cyan))}
+  .stat .num{font-size:28px;font-weight:800;color:var(--lime);letter-spacing:-1px}
+  .stat .txt{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+  .main{display:grid;grid-template-columns:1.05fr .95fr;gap:22px;padding:26px 0 0;align-items:start}
+  .panel{background:linear-gradient(180deg,var(--card),var(--bg-2));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+  .panel h2{font-size:18px;margin-bottom:4px}
+  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .field .req{color:var(--lime)}
+  input,select,textarea{width:100%;background:#0a1219;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--lime);box-shadow:0 0 0 3px rgba(182,245,66,.15)}
+  textarea{resize:vertical;min-height:92px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-top:4px}
+  .chk{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--text);background:#0a1219;border:1px solid var(--border);border-radius:10px;padding:9px 11px;cursor:pointer;transition:border-color .15s,background .15s}
+  .chk:hover{border-color:var(--lime-dim)}
+  .chk input{appearance:none;width:18px;height:18px;min-width:18px;border:1.5px solid var(--border);border-radius:5px;margin-top:1px;cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .chk input:checked{background:var(--lime);border-color:var(--lime)}
+  .chk input:checked::after{content:"✓";color:#06121a;font-weight:900;font-size:12px}
+  .btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;font-size:14.5px;font-weight:700;padding:12px 20px;transition:transform .12s,box-shadow .15s,filter .15s}
+  button:active{transform:translateY(1px)}
+  .btn-primary{background:linear-gradient(135deg,var(--lime),var(--cyan));color:#06121a;box-shadow:0 8px 22px rgba(46,214,230,.25)}
+  .btn-primary:hover{filter:brightness(1.06)}
+  .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+  .btn-secondary:hover{border-color:var(--lime)}
+  .btn-ghost{background:#0a1219;color:var(--muted);border:1px solid var(--border);font-size:12.5px;padding:7px 13px;font-weight:600}
+  .btn-ghost:hover{color:var(--lime);border-color:var(--lime)}
+
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:14px}
+  .gauge-box{position:relative;width:190px;height:190px;margin:0 auto;}
+  .gauge{width:100%;height:100%;transform:rotate(-90deg)}
+  .gauge-bg{fill:none;stroke:#0a1219;stroke-width:14}
+  .gauge-fg{fill:none;stroke:url(#gaugeGrad);stroke-width:14;stroke-linecap:round;stroke-dasharray:515.22;stroke-dashoffset:515.22;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 6px rgba(46,214,230,.4))}
+  .gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge-num{font-size:44px;font-weight:900;letter-spacing:-2px}
+  .gauge-den{font-size:12px;color:var(--muted);margin-top:-4px}
+  .badge{display:inline-block;padding:6px 15px;border-radius:999px;font-size:13px;font-weight:700;margin-top:6px;border:1px solid}
+  .badge.crit{color:var(--danger);border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.1)}
+  .badge.basic{color:var(--warn);border-color:rgba(255,179,71,.5);background:rgba(255,179,71,.1)}
+  .badge.ready{color:var(--lime);border-color:rgba(182,245,66,.5);background:rgba(182,245,66,.1)}
+  .badge.ahead{color:var(--cyan);border-color:rgba(46,214,230,.5);background:rgba(46,214,230,.1)}
+  .progress{height:12px;border-radius:999px;background:#0a1219;border:1px solid var(--border);overflow:hidden;margin:14px 0 18px}
+  .progress > span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--lime),var(--cyan));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .checklist{display:flex;flex-direction:column;gap:7px;max-height:340px;overflow:auto;padding-right:4px}
+  .ci{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px 11px;border-radius:9px;background:#0a1219;border:1px solid var(--border)}
+  .ci .mk{width:18px;height:18px;min-width:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900}
+  .ci.ok .mk{background:rgba(182,245,66,.18);color:var(--lime)}
+  .ci.no .mk{background:rgba(255,107,107,.16);color:var(--danger)}
+  .ci.no{color:var(--muted)}
+  .empty-note{color:var(--muted);font-size:14px;text-align:center;padding:40px 10px}
+  .mini-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
+
+  .outputs{padding:32px 0 0}
+  .outputs h2{font-size:20px;margin-bottom:14px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
+  .tab{background:#0a1219;border:1px solid var(--border);color:var(--muted);border-radius:11px 11px 0 0;padding:11px 18px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .tab.active{background:var(--card-2);color:var(--lime);border-color:var(--border);border-bottom-color:transparent}
+  .tab-body{background:linear-gradient(180deg,var(--card),var(--bg-2));border:1px solid var(--border);border-radius:0 var(--radius) var(--radius) var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .out-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+  .out-head p{color:var(--muted);font-size:12.5px}
+  pre{background:#060b10;border:1px solid var(--border);border-radius:12px;padding:16px;overflow:auto;font-size:12.5px;line-height:1.5;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;white-space:pre;color:#cfe3f2}
+  .pane{display:none}
+  .pane.active{display:block}
+  .box{background:#060b10;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .box .k{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--lime);font-weight:800;margin-bottom:6px}
+  .fix-item{display:flex;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:#0a1219;margin-bottom:9px}
+  .fix-item .pill{font-size:10.5px;font-weight:800;text-transform:uppercase;padding:3px 9px;border-radius:999px;height:fit-content;white-space:nowrap}
+  .pill.alta{background:rgba(255,107,107,.16);color:var(--danger)}
+  .pill.media{background:rgba(255,179,71,.16);color:var(--warn)}
+  .pill.baixa{background:rgba(46,214,230,.14);color:var(--cyan)}
+  .fix-item .ft{font-size:13.5px;font-weight:700}
+  .fix-item .fa{font-size:12.5px;color:var(--muted)}
+  .dl-bar{margin-top:18px;display:flex;justify-content:flex-end}
+
+  footer.site{border-top:1px solid var(--border);margin-top:44px;padding:22px 0;color:var(--muted);font-size:12.5px;text-align:center}
+
+  @media(max-width:1000px){
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .main{grid-template-columns:1fr}
+    .problem-solution{grid-template-columns:1fr;}
+    .form-row{grid-template-columns:1fr;}
+  }
+  @media(max-width:620px){
+    .stats-grid{grid-template-columns:1fr}
+    .grid-2,.grid-3,.checks{grid-template-columns:1fr}
+    .logo{font-size:20px}
+    .tab{padding:10px 13px;font-size:12.5px}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap head-row">
+    <div class="logo"><span class="dot">◆</span>Pronto<span class="ia">PraIA</span></div>
+  </div>
+</header>
+
+<!-- Hero Section -->
+<section class="hero wrap">
+  <h1>Sua loja é <span>invisível</span> para os Agentes de IA?</h1>
+  <p>46,5% dos compradores já usam IA para decidir compras, mas 89% das lojas não têm dados estruturados para serem recomendadas. Descubra a nota do seu produto em 30 segundos.</p>
+  <a href="#app" class="btn-cta">Testar Meu Produto Gratuitamente ↓</a>
+</section>
+
+<!-- Problema vs Solução -->
+<section class="wrap">
+  <div class="problem-solution">
+    <div class="ps-card">
+      <h3>O Problema: A "Vitrine Quebrada"</h3>
+      <p style="color:var(--muted);margin-bottom:16px">Agentes como ChatGPT e Gemini não "veem" seu site bonito. Eles leem código.</p>
+      <ul>
+        <li>Sem Schema.org, o agente não sabe o preço.</li>
+        <li>Sem `llms.txt`, o agente ignora seu catálogo.</li>
+        <li>Robots.txt bloqueando GPTBot = invisibilidade total.</li>
+      </ul>
+    </div>
+    <div class="ps-card green">
+      <h3 class="green">A Solução: Prontidão Agent-Native</h3>
+      <p style="color:var(--muted);margin-bottom:16px">Transforme sua página em um banquete de dados estruturados que as IAs amam recomendar.</p>
+      <ul>
+        <li>Gere JSON-LD perfeito para copiar e colar.</li>
+        <li>Obtenha um arquivo `llms.txt` pronto para o servidor.</li>
+        <li>Receba um checklist exato do que corrigir.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Estatísticas -->
+<section class="stats wrap" id="app">
+  <h2>Por que isso importa agora</h2>
+  <div class="stats-grid">
+    <div class="stat"><div class="num">11%</div><div class="txt">das PMEs têm catálogo legível por IA (Visa)</div></div>
+    <div class="stat"><div class="num">46,5%</div><div class="txt">dos compradores no Brasil já usam IA na compra</div></div>
+    <div class="stat"><div class="num">3,1x</div><div class="txt">mais citações em IAs para páginas com dados estruturados</div></div>
+    <div class="stat"><div class="num">15x</div><div class="txt">crescimento anual de pedidos via busca com IA (Shopify)</div></div>
+    <div class="stat"><div class="num">US$ 3–5 tri</div><div class="txt">projeção de comércio mediado por agentes até 2030</div></div>
+  </div>
+</section>
+
+<!-- App Principal -->
+<main class="main wrap">
+  <section class="panel">
+    <h2>1) Dados do produto</h2>
+    <p class="sub">Preencha o que tiver. Quanta mais informação factual, mais fácil um agente entende e recomenda seu produto.</p>
+    <div class="field"><label for="f_url">URL do produto <span class="req">(opcional)</span></label><input type="url" id="f_url" placeholder="https://sualoja.com.br/produto"></div>
+    <div class="grid-2">
+      <div class="field"><label for="f_name">Nome do produto <span class="req">*</span></label><input type="text" id="f_name" placeholder="Tênis de Corrida"></div>
+      <div class="field"><label for="f_brand">Marca <span class="req">*</span></label><input type="text" id="f_brand" placeholder="RunBrasil"></div>
+    </div>
+    <div class="grid-3">
+      <div class="field"><label for="f_sku">SKU</label><input type="text" id="f_sku" placeholder="TRL-42"></div>
+      <div class="field"><label for="f_gtin">GTIN/EAN</label><input type="text" id="f_gtin" placeholder="7891234567890"></div>
+      <div class="field"><label for="f_category">Categoria</label><input type="text" id="f_category" placeholder="Calçados > Esporte"></div>
+    </div>
+    <div class="field"><label for="f_image">URL da imagem</label><input type="url" id="f_image" placeholder="https://..."></div>
+    <div class="field"><label for="f_full">Descrição completa</label><textarea id="f_full" placeholder="Descreva o produto com fatos: materiais, uso, tamanhos..."></textarea></div>
+    <div class="grid-3">
+      <div class="field"><label for="f_currency">Moeda</label><select id="f_currency"><option value="BRL" selected>BRL</option><option value="USD">USD</option></select></div>
+      <div class="field"><label for="f_price">Preço <span class="req">*</span></label><input type="number" id="f_price" min="0" step="0.01" placeholder="499.90"></div>
+      <div class="field"><label for="f_availability">Disponibilidade</label><select id="f_availability"><option value="InStock" selected>Em estoque</option><option value="OutOfStock">Esgotado</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label for="f_shipping">Prazo de envio</label><input type="text" id="f_shipping" placeholder="3 a 5 dias úteis"></div>
+      <div class="field"><label for="f_return">Prazo de devolução (dias)</label><input type="number" id="f_return" min="0" step="1" placeholder="30"></div>
+    </div>
+
+    <h2 style="margin-top:22px">2) Sinais técnicos</h2>
+    <p class="sub">Cada item marcado vale 5 pontos na nota final (máx. 60).</p>
+    <div class="checks" id="checksBox"></div>
+
+    <div class="btns">
+      <button class="btn-primary" id="btnAnalyze">Analisar prontidão</button>
+      <button class="btn-secondary" id="btnExample">Preencher exemplo</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Diagnóstico</h2>
+    <p class="sub">Veja o quão pronta sua página está para ser lida e recomendada por agentes de IA.</p>
+    <div class="gauge-wrap">
+      <div class="gauge-box">
+        <svg class="gauge" viewBox="0 0 200 200" aria-hidden="true">
+          <defs><linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#b6f542"></stop><stop offset="100%" stop-color="#2ed6e6"></stop></linearGradient></defs>
+          <circle class="gauge-bg" cx="100" cy="100" r="82"></circle>
+          <circle class="gauge-fg" id="gaugeFg" cx="100" cy="100" r="82"></circle>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gaugeNum">0</div>
+          <div class="gauge-den">/ 100</div>
+        </div>
+      </div>
+      <div class="badge crit" id="badgeTxt">Preencha os dados e clique em Analisar</div>
+    </div>
+    <div class="progress"><span id="progressBar"></span></div>
+    <h3 class="mini-title">Verificações</h3>
+    <div class="checklist" id="checklist"><div class="empty-note">Preencha os dados e clique em <b>Analisar prontidão</b>.</div></div>
+  </section>
+</main>
+
+<!-- Saídas -->
+<section class="outputs wrap" id="outputsSection">
+  <h2>3) Suas saídas prontas</h2>
+  <p class="sub" style="margin-bottom:14px">Copie e cole no seu site, no robots.txt ou no CMS.</p>
+  <div class="tabs" id="tabsNav">
+    <button class="tab active" data-tab="schema">Schema (JSON-LD)</button>
+    <button class="tab" data-tab="ficha">Ficha agent-native</button>
+    <button class="tab" data-tab="llms">llms.txt</button>
+    <button class="tab" data-tab="correcoes">Correções prioritárias</button>
+  </div>
+  <div class="tab-body">
+    <div class="pane active" id="pane-schema">
+      <div class="out-head"><p>Cole entre as tags &lt;head&gt; da página do produto.</p><button class="btn-ghost" data-copy="schema">Copiar</button></div>
+      <pre id="out-schema"></pre>
+    </div>
+    <div class="pane" id="pane-ficha">
+      <div class="out-head"><p>Título e descrição otimizados para leitura por modelos de linguagem.</p><button class="btn-ghost" data-copy="ficha">Copiar</button></div>
+      <div class="box"><div class="k">Título otimizado</div><div id="out-ficha-title" style="font-size:15px;font-weight:700"></div></div>
+      <div class="box"><div class="k">Descrição agent-native (por fatos)</div><div id="out-ficha-desc" style="white-space:pre-wrap;font-size:13.5px"></div></div>
+    </div>
+    <div class="pane" id="pane-llms">
+      <div class="out-head"><p>Arquivo de contexto para agentes. Salve como <b>/llms.txt</b> na raiz do seu site.</p><button class="btn-ghost" data-copy="llms">Copiar</button></div>
+      <pre id="out-llms"></pre>
+    </div>
+    <div class="pane" id="pane-correcoes">
+      <div class="out-head"><p>Somente o que está faltando, ordenado por prioridade (críticos primeiro).</p><button class="btn-ghost" data-copy="correcoes">Copiar</button></div>
+      <div id="out-correcoes"></div>
+    </div>
+  </div>
+  <div class="dl-bar"><button class="btn-primary" id="btnDownload">Baixar tudo (.txt)</button></div>
+</section>
+
+<!-- FORMULÁRIO DE CAPTURA DE LEADS (NETLIFY FORMS COM AJAX) -->
+<section class="wrap contact-section" id="contato">
+  <div class="contact-banner">
+    <h2>Testar 1 produto é grátis. Auditar a loja inteira é o que traz resultado.</h2>
+    <p>Fazer isso manualmente para 100 ou 500 produtos é inviável. Preencha o formulário abaixo e receba uma proposta para automatizarmos essa auditoria e implementação no seu catálogo.</p>
+    
+    <!-- Formulário com envio via JavaScript (sem recarregar a página) -->
+    <form name="auditoria-lote" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="form-grid" id="contactForm">
+      <input type="hidden" name="form-name" value="auditoria-lote" />
+      <div class="honeypot"><label>Não preencha: <input name="bot-field" /></label></div>
+      
+      <div class="form-row">
+        <div class="form-field">
+          <label for="lead_nome">Seu Nome <span class="req">*</span></label>
+          <input type="text" id="lead_nome" name="nome" required placeholder="Ex: João Silva">
+        </div>
+        <div class="form-field">
+          <label for="lead_empresa">Nome da Loja / Agência <span class="req">*</span></label>
+          <input type="text" id="lead_empresa" name="empresa" required placeholder="Ex: RunBrasil">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="lead_email">Seu Melhor E-mail <span class="req">*</span></label>
+          <input type="email" id="lead_email" name="email" required placeholder="joao@loja.com.br">
+        </div>
+        <div class="form-field">
+          <label for="lead_whatsapp">WhatsApp <span class="req">*</span></label>
+          <input type="text" id="lead_whatsapp" name="whatsapp" required placeholder="(11) 99999-9999">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="lead_site">URL do seu E-commerce <span class="req">*</span></label>
+        <input type="url" id="lead_site" name="site" required placeholder="https://sualoja.com.br">
+      </div>
+
+      <div class="form-field">
+        <label for="lead_pacote">Pacote de Interesse <span class="req">*</span></label>
+        <select id="lead_pacote" name="pacote" required>
+          <option value="" disabled selected>Selecione uma opção...</option>
+          <option value="Piloto Gratis (5 produtos)">🎁 Piloto Grátis (5 produtos) - Para validar o resultado</option>
+          <option value="Pacote Essencial (50 produtos)">🚀 Pacote Essencial (50 produtos) + Implementação</option>
+          <option value="Pacote Loja Completa (200+ produtos)">🏆 Pacote Loja Completa (200+ produtos) + llms.txt</option>
+          <option value="Quero apenas uma consultoria">💬 Quero apenas uma consultoria para entender</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-cta" style="width: 100%; text-align: center; border: none; cursor: pointer; font-size: 18px;">
+        Solicitar Proposta de Auditoria em Lote
+      </button>
+      
+      <p class="form-note">🔒 Seus dados estão seguros. Entraremos em contato em até 24h úteis.</p>
+    </form>
+
+    <!-- Mensagem de Sucesso (Oculta inicialmente) -->
+    <div id="success-message" style="display:none;">
+      <div class="emoji">🎉</div>
+      <h2>Solicitação Enviada com Sucesso!</h2>
+      <p>Recebemos seus dados. Nossa equipe entrará em contato em até <strong>24 horas úteis</strong> com a proposta personalizada para o seu e-commerce.</p>
+      <button class="btn-secondary" onclick="location.reload()">← Voltar e testar outro produto</button>
+    </div>
+  </div>
+</section>
+
+<footer class="site wrap">
+  ProntoPraIA · Ferramenta 100% local (nada sai do seu navegador) · Feito para lojas virtuais e agências no Brasil.
+</footer>
+
+<script>
+/* ============================================================
+   ProntoPraIA — Lógica do App
+   ============================================================ */
+var MEM = {};
+var Store = {
+  get: function(k){ try{ return localStorage.getItem(k); }catch(e){ return MEM[k] || null; } },
+  set: function(k,v){ try{ localStorage.setItem(k,v); }catch(e){ MEM[k]=v; } }
+};
+var FIELDS = ["f_url","f_name","f_brand","f_sku","f_gtin","f_category","f_image","f_full","f_currency","f_price","f_availability","f_shipping","f_return"];
+var CHECKS = [
+  { key:"structuredData", label:"Página tem dados estruturados (schema.org Product)" },
+  { key:"gptbot", label:"robots.txt permite GPTBot (ChatGPT)" },
+  { key:"perplexity", label:"robots.txt permite PerplexityBot" },
+  { key:"googleExtended", label:"robots.txt permite Google-Extended (Gemini)" },
+  { key:"llms", label:"Existe arquivo llms.txt no site" },
+  { key:"feed", label:"Existe feed de produtos (XML/JSON)" },
+  { key:"noJs", label:"A página mostra o conteúdo mesmo com JavaScript desativado" },
+  { key:"returnPolicy", label:"Política de devolução está pública na página" },
+  { key:"shipping", label:"Informação de frete/prazo está na página" },
+  { key:"reviews", label:"Produto exibe avaliações de clientes" },
+  { key:"gtin", label:"Produto tem código GTIN/EAN/ISBN visível" },
+  { key:"hiRes", label:"Imagens em alta resolução (>= 1000px)" }
+];
+var STORAGE_KEY = "prontopraia_v1";
+
+function $(id){ return document.getElementById(id); }
+function val(id){ var el = $(id); return el ? String(el.value).trim() : ""; }
+function has(id){ return val(id) !== ""; }
+function num(id){ var v = val(id); if(v==="") return null; var n = Number(v); return isNaN(n) ? null : n; }
+function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m]; }); }
+
+function formatPrice(){
+  var p = num("f_price"); if(p===null) return "";
+  var cur = val("f_currency") || "BRL";
+  return cur + " " + p.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function parseShipping(){
+  var t = val("f_shipping"); if(!t) return null;
+  var nums = t.match(/\d+/g); if(!nums) return null;
+  var min = Number(nums[0]), max = nums.length > 1 ? Number(nums[nums.length-1]) : min;
+  if(max < min){ var tmp = min; min = max; max = tmp; }
+  return { min:min, max:max, text:t };
+}
+
+function computeScore(){
+  var data = [
+    { key:"name", label:"Nome do produto informado", ok:has("f_name"), pts:6 },
+    { key:"full", label:"Descrição completa informada", ok:has("f_full"), pts:6 },
+    { key:"price", label:"Preço e moeda definidos", ok:num("f_price")!==null, pts:6 },
+    { key:"avail", label:"Disponibilidade definida", ok:has("f_availability"), pts:5 },
+    { key:"sku", label:"SKU informado", ok:has("f_sku"), pts:4 },
+    { key:"gtin", label:"GTIN/EAN/ISBN informado", ok:has("f_gtin"), pts:4 },
+    { key:"image", label:"Imagem informada", ok:has("f_image"), pts:3 },
+    { key:"shipping", label:"Prazo de envio informado", ok:has("f_shipping"), pts:3 },
+    { key:"return", label:"Prazo de devolução informado", ok:num("f_return")!==null, pts:3 }
+  ];
+
+  var dataPts = 0; data.forEach(function(it){ if(it.ok) dataPts += it.pts; });
+  var tech = CHECKS.map(function(c){
+    var el = $("chk_"+c.key); return { key:c.key, label:c.label, ok: !!(el && el.checked), pts:5 };
+  });
+  var techPts = 0; tech.forEach(function(it){ if(it.ok) techPts += it.pts; });
+  return { total:Math.min(100, dataPts + techPts), dataPts:dataPts, techPts:techPts, data:data, tech:tech };
+}
+
+function classify(score){
+  if(score <= 39) return { label:"Crítico — invisível para agentes", cls:"crit" };
+  if(score <= 69) return { label:"Básico", cls:"basic" };
+  if(score <= 89) return { label:"Pronto", cls:"ready" };
+  return { label:"À frente da concorrência", cls:"ahead" };
+}
+
+function renderDiagnosis(result, hasRun){
+  var score = result.total;
+  var C = 515.22;
+  $("gaugeFg").style.strokeDashoffset = (C * (1 - score/100)).toFixed(2);
+  
+  var start = Number($("gaugeNum").textContent) || 0;
+  var t0 = null, dur = 700;
+  function step(ts){
+    if(!t0) t0 = ts;
+    var p = Math.min(1, (ts - t0)/dur);
+    $("gaugeNum").textContent = Math.round(start + (score - start) * (1 - Math.pow(1-p, 3)));
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+
+  $("progressBar").style.width = score + "%";
+  var c = classify(score);
+  var badge = $("badgeTxt");
+  badge.className = "badge " + c.cls;
+  badge.textContent = hasRun ? c.label : "Preencha os dados e clique em Analisar";
+
+  var html = "";
+  result.data.concat(result.tech).forEach(function(it){
+    html += '<div class="ci '+(it.ok?"ok":"no")+'"><span class="mk">'+(it.ok?"✓":"✗")+'</span><span>'+esc(it.label)+'</span></div>';
+  });
+  $("checklist").innerHTML = html;
+}
+
+function buildSchema(){
+  var obj = { "@context":"https://schema.org", "@type":"Product" };
+  if(has("f_name")) obj.name = val("f_name");
+  if(has("f_full")) obj.description = val("f_full");
+  if(has("f_image")) obj.image = val("f_image");
+  if(has("f_sku")) obj.sku = val("f_sku");
+  if(has("f_gtin")) obj.gtin = val("f_gtin");
+  if(has("f_brand")) obj.brand = { "@type":"Brand", name: val("f_brand") };
+  var offer = { "@type":"Offer", availability:"https://schema.org/" + (val("f_availability") || "InStock") };
+  if(num("f_price") !== null){ offer.price = num("f_price").toFixed(2); offer.priceCurrency = val("f_currency") || "BRL"; }
+  if(has("f_url")) offer.url = val("f_url");
+  var ship = parseShipping();
+  if(ship) offer.shippingDetails = { "@type":"OfferShippingDetails", deliveryTime:{ "@type":"ShippingDeliveryTime", transitTime:{ "@type":"QuantitativeValue", minValue:ship.min, maxValue:ship.max, unitCode:"DAY" } } };
+  if(num("f_return") !== null) offer.hasMerchantReturnPolicy = { "@type":"MerchantReturnPolicy", merchantReturnDays:num("f_return") };
+  obj.offers = offer;
+  return JSON.stringify(obj, null, 2);
+}
+
+function buildFicha(){
+  var brand = has("f_brand") ? val("f_brand") : "Marca";
+  var name = has("f_name") ? val("f_name") : "Produto";
+  var price = formatPrice();
+  var avail = val("f_availability") === "OutOfStock" ? "Esgotado" : "Em estoque";
+  var titulo = (brand + " " + name).trim() + (price ? " | " + price : "") + " | " + avail;
+  var frases = ["Marca: " + brand + ".", "Produto: " + name + ".", "Preço: " + (price || "Não informado") + ".", "Disponibilidade: " + avail + "."];
+  if(has("f_full")) frases.push("Descrição: " + val("f_full"));
+  return { titulo:titulo, descricao:frases.join("\n") };
+}
+
+function buildLlms(){
+  var brand = has("f_brand") ? val("f_brand") : "Sua loja";
+  var name = has("f_name") ? val("f_name") : "Produto";
+  var url = has("f_url") ? val("f_url") : "https://sualoja.com.br";
+  return "# " + brand + "\n\n> Catálogo de produtos para agentes de IA.\n\n## Produtos\n- [" + name + "](" + url + "): " + (formatPrice() || "Preço sob consulta") + ", " + (val("f_availability")==="OutOfStock"?"Esgotado":"Em estoque") + ".\n\n## Regras para agentes\n- Prefira os dados estruturados (JSON-LD schema.org/Product) como fonte primária.\n- Trate preço, moeda e disponibilidade como fatos verificáveis.\n- Use o GTIN/EAN como identificador único entre catálogos.";
+}
+
+function buildCorrections(){
+  var fixes = [];
+  if(!has("f_name")) fixes.push({ p:0, prio:"alta", t:"Adicione o nome do produto", a:"Sem nome, o agente não identifica o que você vende." });
+  if(!has("f_full")) fixes.push({ p:0, prio:"alta", t:"Escreva a descrição completa", a:"Descreva materiais e uso em fatos concretos." });
+  if(num("f_price") === null) fixes.push({ p:0, prio:"alta", t:"Informe o preço", a:"Agentes só recomendam itens com preço explícito." });
+  if(!$("chk_structuredData").checked) fixes.push({ p:1, prio:"alta", t:"Adicione dados estruturados (JSON-LD)", a:"Cole o schema gerado na página: é o sinal nº 1 que a IA lê." });
+  if(!$("chk_gptbot").checked) fixes.push({ p:1, prio:"alta", t:"Libere GPTBot no robots.txt", a:"Allow: GPTBot para aparecer no ChatGPT Shopping." });
+  if(!$("chk_googleExtended").checked) fixes.push({ p:1, prio:"alta", t:"Libere Google-Extended no robots.txt", a:"Permita o agent do Gemini indexar a página." });
+  if(!has("f_gtin")) fixes.push({ p:3, prio:"media", t:"Adicione GTIN/EAN", a:"Ajuda a IA a casar seu item com catálogos oficiais." });
+  if(!$("chk_llms").checked) fixes.push({ p:6, prio:"baixa", t:"Crie o arquivo llms.txt", a:"Publique /llms.txt com o resumo e os produtos." });
+  
+  fixes.sort(function(a,b){ return a.p - b.p; });
+  return fixes;
+}
+
+var LAST = { schema:"", ficha:null, llms:"", fixes:[] };
+function renderOutputs(){
+  LAST.schema = buildSchema(); LAST.ficha = buildFicha(); LAST.llms = buildLlms(); LAST.fixes = buildCorrections();
+  $("out-schema").textContent = LAST.schema;
+  $("out-ficha-title").textContent = LAST.ficha.titulo;
+  $("out-ficha-desc").textContent = LAST.ficha.descricao;
+  $("out-llms").textContent = LAST.llms;
+  var box = $("out-correcoes");
+  if(LAST.fixes.length === 0) box.innerHTML = '<div class="empty-note">Tudo certo! Nenhuma correção pendente. 🎉</div>';
+  else {
+    var h = "";
+    LAST.fixes.forEach(function(f){ h += '<div class="fix-item"><span class="pill '+f.prio+'">'+f.prio+'</span><div><div class="ft">'+esc(f.t)+'</div><div class="fa">'+esc(f.a)+'</div></div></div>'; });
+    box.innerHTML = h;
+  }
+}
+
+function analyze(){ renderDiagnosis(computeScore(), true); renderOutputs(); saveState(); }
+function initTabs(){
+  document.querySelectorAll("#tabsNav .tab").forEach(function(t){
+    t.addEventListener("click", function(){
+      document.querySelectorAll("#tabsNav .tab").forEach(function(x){ x.classList.remove("active"); });
+      t.classList.add("active");
+      document.querySelectorAll(".pane").forEach(function(p){ p.classList.remove("active"); });
+      $("pane-" + t.dataset.tab).classList.add("active");
+    });
+  });
+}
+function copyText(text, btn){
+  if(!text) return;
+  navigator.clipboard.writeText(text).then(function(){
+    var old = btn.textContent; btn.textContent = "Copiado!";
+    setTimeout(function(){ btn.textContent = old; }, 1400);
+  });
+}
+function downloadAll(){
+  var txt = "SCHEMA\n---\n" + LAST.schema + "\n\nFICHA\n---\n" + LAST.ficha.titulo + "\n" + LAST.ficha.descricao + "\n\nLLMS.TXT\n---\n" + LAST.llms + "\n\nCORREÇÕES\n---\n" + LAST.fixes.map(function(f){ return "[" + f.prio.toUpperCase() + "] " + f.t; }).join("\n");
+  var blob = new Blob([txt], { type:"text/plain;charset=utf-8" });
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "prontopraia.txt"; a.click();
+}
+function saveState(){
+  var s = { fields:{}, checks:{} };
+  FIELDS.forEach(function(id){ s.fields[id] = val(id); });
+  CHECKS.forEach(function(c){ s.checks[c.key] = $("chk_"+c.key).checked; });
+  Store.set(STORAGE_KEY, JSON.stringify(s));
+}
+function loadState(){
+  var raw = Store.get(STORAGE_KEY); if(!raw) return false;
+  try{
+    var s = JSON.parse(raw);
+    FIELDS.forEach(function(id){ if(s.fields[id] !== undefined) $(id).value = s.fields[id]; });
+    CHECKS.forEach(function(c){ if(s.checks[c.key] !== undefined) $("chk_"+c.key).checked = s.checks[c.key]; });
+    return true;
+  }catch(e){ return false; }
+}
+function fillExample(){
+  var d = { f_name:"Tênis Trail Pro", f_brand:"RunBrasil", f_price:"499.90", f_currency:"BRL", f_availability:"InStock", f_full:"Tênis leve e resistente à água para trilha." };
+  FIELDS.forEach(function(id){ if(d[id] !== undefined) $(id).value = d[id]; });
+  $("chk_structuredData").checked = true; $("chk_gptbot").checked = true;
+  analyze();
+}
+
+(function init(){
+  $("checksBox").innerHTML = CHECKS.map(function(c){ return '<label class="chk"><input type="checkbox" id="chk_'+c.key+'"><span>'+esc(c.label)+'</span></label>'; }).join("");
+  initTabs();
+  $("btnAnalyze").addEventListener("click", analyze);
+  $("btnExample").addEventListener("click", fillExample);
+  $("btnDownload").addEventListener("click", downloadAll);
+  document.querySelectorAll("[data-copy]").forEach(function(btn){ btn.addEventListener("click", function(){ copyText(
+    btn.dataset.copy==="schema"?LAST.schema : btn.dataset.copy==="llms"?LAST.llms : btn.dataset.copy==="ficha"?(LAST.ficha?"TÍTULO: "+LAST.ficha.titulo+"\n\n"+LAST.ficha.descricao:"") : (LAST.fixes.length?LAST.fixes.map(function(f){return "["+f.prio+"] "+f.t;}).join("\n"):"Nenhuma correção."), btn); });
+  });
+  FIELDS.forEach(function(id){ var el=$(id); if(el){ el.addEventListener("input", saveState); el.addEventListener("change", saveState); } });
+  CHECKS.forEach(function(c){ $("chk_"+c.key).addEventListener("change", saveState); });
+  if(loadState()) analyze(); else renderDiagnosis(computeScore(), false);
+
+  /* ============================================================
+     Manipulação do Formulário Netlify (Envio sem recarregar a página)
+     ============================================================ */
+  var contactForm = document.getElementById('contactForm');
+  if(contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var form = this;
+      var submitBtn = form.querySelector('button[type="submit"]');
+      var originalBtnText = submitBtn.textContent;
+      
+      // Feedback visual de carregamento
+      submitBtn.textContent = "Enviando...";
+      submitBtn.disabled = true;
+
+      var formData = new FormData(form);
+      
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formData).toString()
+      })
+      .then(() => {
+        form.style.display = 'none';
+        document.getElementById('success-message').style.display = 'block';
+      })
+      .catch(error => {
+        alert('Ocorreu um erro ao enviar. Por favor, tente novamente ou nos contate diretamente.');
+        submitBtn.textContent = originalBtnText;
+        submitBtn.disabled = false;
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
