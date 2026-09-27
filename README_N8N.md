@@ -86,6 +86,26 @@ Fluxo (4 nós):
 | `url` vazio no HTTP Request | O pinData foi perdido na importação. Re-fixe os dados no Manual Trigger (cole o array de `pinData` do JSON) ou substitua pelo Google Sheets Read. |
 | CSV com colunas erradas | O Spreadsheet File usa as chaves `url, nota, status, faltando, json_ld_sugerido`. Não renomeie as chaves no nó Code sem ajustar o cabeçalho. |
 | Erro de importação do JSON | Versão antiga do n8n. Atualize o n8n (`npm i -g n8n` ou nova imagem Docker) e importe de novo. |
+| Loop não avança / trava no Split | O **Split In Batches** precisa ter o loop fechado: `Aguardar 3s → Dividir em Lotes`. Sem essa conexão de volta, ele processa só o 1º lote. Confira o canvas. |
+| CSV duplicado ao re-rodar | O modo agora é **Append**. Apague `resultados_auditoria.csv` antes de uma nova auditoria completa, ou use um nome com data. |
+
+## 7. Como auditar 500+ produtos (Modo Produção)
+
+Arquitetura atual (7 nós, padrão **Loop com Lotes e Delay**):
+
+```
+Manual Trigger → Dividir em Lotes (10) → Buscar HTML → Auditoria → Salvar CSV (Append) → Aguardar 3s ─┐
+                       │ (saída "Done", quando acabam os lotes)                                        │
+                       └──────────────────────────────→ Gerar PDF ◄───────────────────────────────────┘
+                                                        (loop: Aguardar 3s volta p/ Dividir em Lotes)
+```
+
+1. **Dividir em Lotes** (`Split In Batches`, `batchSize: 10`): recebe as 500+ URLs de uma vez e libera só 10 por ciclo. Isso evita estourar memória/RAM do n8n e evita rajadas de 500 requisições simultâneas (que derrubam o n8n e disparam bloqueio dos sites).
+2. **Buscar HTML Produto com "Continue On Fail"** (`onError: continueRegularOutput`): se um produto der 403/404/timeout (Amazon e Nike bloqueiam bots com frequência), o item segue com `error` no JSON em vez de matar a execução inteira. O nó Code detecta isso e registra `nota 0 / Crítico / erro-http: ...` no CSV — você vê o que falhou sem perder as outras 499.
+3. **User-Agent realista**: o header simula um Chrome desktop (`AppleWebKit/537.36 ... Chrome/126`). Sem isso, muitos e-commerces barram na hora. Se mesmo assim houver muito 403, aumente o **Aguardar 3s** para 5–10s ou rode em horários alternados.
+4. **Salvar CSV em modo Append**: cada lote **anexa** linhas ao `resultados_auditoria.csv` em vez de sobrescrever. ⚠️ Por isso, **apague o CSV antes de cada auditoria completa** — senão os resultados antigos se misturam aos novos.
+5. **Aguardar 3s + Loop**: o delay entre lotes é o "rate limiting do bem" — 500 URLs × ~3s ≈ 25 min, mas com taxa de sucesso muito maior e sem IP bloqueado. O fio `Aguardar 3s → Dividir em Lotes` fecha o loop; o fio da 2ª saída do Split (`Done`) dispara o **Gerar PDF uma única vez** no final.
+6. **Para volumes muito altos, prefira Google Sheets ao CSV local**: o `Spreadsheet File` reescreve o arquivo a cada append e pode corromper se o n8n reiniciar no meio; no Sheets (nó **Google Sheets → Append**, ver seção 3.2) cada linha é uma escrita atômica, dá para acompanhar o progresso ao vivo e não depende do disco do container. Troque também a entrada: **Google Sheets Read** com as 500 URLs (coluna `url`) no lugar do pinData do Manual Trigger.
 
 ## 6. Geração Automática de PDF
 
