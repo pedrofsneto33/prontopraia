@@ -1,81 +1,23 @@
 {
   "active": false,
-  "connections": {
-    "Manual Trigger": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Dividir em Lotes",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Dividir em Lotes": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Buscar HTML Produto",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Gerar PDF",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Buscar HTML Produto": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Auditoria ProntoPraIA",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Auditoria ProntoPraIA": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Salvar CSV",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Salvar CSV": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Aguardar 3s",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Aguardar 3s": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Dividir em Lotes",
-            "type": "main"
-          }
-        ]
-      ]
-    }
-  },
   "name": "ProntoPraIA - Auditoria de Produto",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {
+    "Manual Trigger": [
+      {
+        "url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"
+      },
+      {
+        "url": "https://www.amazon.com.br/dp/B09B8V1LZ3"
+      },
+      {
+        "url": "https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/"
+      }
+    ]
+  },
   "nodes": [
     {
       "id": "a1b2c3d4-manual-trigger-001",
@@ -172,7 +114,7 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Persistencia confiavel do CSV via fs.appendFileSync (append real, local).\r\nconst fs = require('fs');\r\nconst path = require('path');\r\nconst CSV_PATH = path.join(process.cwd(), 'resultados_auditoria.csv');\r\nconst HEADER = 'url,nota,status,faltando,json_ld_sugerido';\r\n// Neutraliza injecao de formula (CSV injection) e envolve em aspas quando necessario.\r\nfunction csvEscape(v) {\r\n  let s = String(v ?? '');\r\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\r\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\r\n  return s;\r\n}\r\nconst lines = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  lines.push([csvEscape(j.url), csvEscape(j.nota), csvEscape(j.status), csvEscape(j.faltando), csvEscape(j.json_ld_sugerido)].join(','));\r\n}\r\nif (!fs.existsSync(CSV_PATH)) fs.writeFileSync(CSV_PATH, HEADER + '\\n', 'utf8');\r\nif (lines.length) fs.appendFileSync(CSV_PATH, lines.join('\\n') + '\\n', 'utf8');\r\nreturn [{ json: { csv: CSV_PATH, linhas_adicionadas: lines.length } }];\r\n"
+        "js": "// ProntoPraIA - Persistencia confiavel do CSV via fs.appendFileSync (append real, local).\r\nconst fs = require('fs');\r\nconst path = require('path');\r\nconst CSV_PATH = path.join(process.cwd(), 'resultados_auditoria.csv');\r\nconst HEADER = 'url,nota,status,faltando,json_ld_sugerido';\r\nconst filePath = CSV_PATH;\r\n// Neutraliza injecao de formula (CSV injection) e envolve em aspas quando necessario.\r\nfunction csvEscape(v) {\r\n  let s = String(v ?? '');\r\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\r\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\r\n  return s;\r\n}\r\nconst lines = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  const description = String(j.faltando ?? '');\r\n  lines.push([csvEscape(j.url), csvEscape(j.nota), csvEscape(j.status), csvEscape(description), csvEscape(j.json_ld_sugerido)].join(','));\r\n}\r\nif (!fs.existsSync(filePath)) fs.writeFileSync(filePath, HEADER + '\\n', 'utf8');\r\nif (lines.length) fs.appendFileSync(filePath, lines.join('\\n') + '\\n', 'utf8');\r\nreturn [{ json: { csv: filePath, linhas_adicionadas: lines.length } }];\r\n"
       }
     },
     {
@@ -190,35 +132,93 @@
       }
     },
     {
-      "id": "e5f6a7b8-exec-pdf-005",
+      "id": "e5f6a7b8-pdf-code-005",
       "name": "Gerar PDF",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         460,
         520
       ],
       "parameters": {
-        "command": "node gerar-relatorio-pdf.js",
-        "executeOnce": true
+        "mode": "runOnceForAllItems",
+        "js": "const { exec } = require('child_process');\r\nreturn new Promise((resolve) => {\r\n  exec('node gerar-relatorio-pdf.js', (error, stdout) => {\r\n    resolve([{ json: { success: !error, output: stdout } }]);\r\n  });\r\n});\r\n"
       }
     }
   ],
-  "pinData": {
-    "Manual Trigger": [
-      {
-        "url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"
-      },
-      {
-        "url": "https://www.amazon.com.br/dp/B09B8V1LZ3"
-      },
-      {
-        "url": "https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/"
-      }
-    ]
-  },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Dividir em Lotes",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Dividir em Lotes": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Buscar HTML Produto",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Gerar PDF",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Buscar HTML Produto": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Auditoria ProntoPraIA",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Auditoria ProntoPraIA": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Salvar CSV",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Salvar CSV": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Aguardar 3s",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Aguardar 3s": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Dividir em Lotes",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  }
 }
