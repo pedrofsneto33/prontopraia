@@ -86,3 +86,20 @@ Fluxo (4 nós):
 | `url` vazio no HTTP Request | O pinData foi perdido na importação. Re-fixe os dados no Manual Trigger (cole o array de `pinData` do JSON) ou substitua pelo Google Sheets Read. |
 | CSV com colunas erradas | O Spreadsheet File usa as chaves `url, nota, status, faltando, json_ld_sugerido`. Não renomeie as chaves no nó Code sem ajustar o cabeçalho. |
 | Erro de importação do JSON | Versão antiga do n8n. Atualize o n8n (`npm i -g n8n` ou nova imagem Docker) e importe de novo. |
+
+## 6. Geração Automática de PDF
+
+O workflow termina com o nó **Gerar PDF** (`Execute Command`), que roda `node gerar-relatorio-pdf.js` após o **Salvar CSV** gerar o `resultados_auditoria.csv`. O script lê o CSV e gera o `Relatorio_Auditoria_ProntoPraIA.pdf` (cabeçalho ProntoPraIA, resumo executivo com nota média, tabela por produto e apêndice com exemplo de JSON-LD).
+
+**Pré-requisito (obrigatório antes de usar o n8n):** rode na pasta do projeto:
+
+```powershell
+npm install
+```
+
+Isso instala `pdfmake` (gera o PDF sem navegador headless) e `csvtojson` (lê o CSV do n8n), conforme o `package.json`.
+
+**Atenção Docker:** o comando `node gerar-relatorio-pdf.js` precisa rodar **na mesma máquina onde estão o CSV e o `node_modules`**. Se o n8n roda em Docker, o `Execute Command` executa **dentro do container** (sem acesso ao seu projeto). Opções:
+1. Rodar o n8n local via `npx n8n` na pasta do projeto (recomendado para teste).
+2. Ou gerar o PDF manualmente: `npm install` + `node gerar-relatorio-pdf.js` na raiz do projeto.
+3. Ou montar o projeto como volume no container e instalar as dependências lá dentro.

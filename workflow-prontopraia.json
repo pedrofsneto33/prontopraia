@@ -1,1 +1,156 @@
-{"active": false, "connections": {"Auditoria ProntoPraIA": {"main": [[{"index": 0, "node": "Salvar CSV", "type": "main"}]]}, "Buscar HTML Produto": {"main": [[{"index": 0, "node": "Auditoria ProntoPraIA", "type": "main"}]]}, "Manual Trigger": {"main": [[{"index": 0, "node": "Buscar HTML Produto", "type": "main"}]]}}, "name": "ProntoPraIA - Auditoria de Produto", "nodes": [{"id": "a1b2c3d4-manual-trigger-001", "name": "Manual Trigger", "parameters": {}, "position": [240, 300], "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1.1}, {"id": "b2c3d4e5-http-request-002", "name": "Buscar HTML Produto", "parameters": {"headerParameters": {"parameters": [{"name": "User-Agent", "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ProntoPraIA-Auditor/1.0"}]}, "method": "GET", "options": {"response": {"response": {"outputPropertyName": "data", "responseFormat": "text"}}, "timeout": 30000}, "sendHeaders": true, "url": "={{ $json.url }}"}, "position": [460, 300], "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2}, {"id": "c3d4e5f6-code-audit-003", "name": "Auditoria ProntoPraIA", "parameters": {"js": "// ProntoPraIA - No de auditoria: recebe HTML do no HTTP Request e calcula nota 0-100\nconst results = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  const url = j.url || j.URL || 'URL desconhecida';\n  // O HTTP Request com responseFormat=text devolve o HTML em `data`\n  const raw = j.data ?? j.html ?? j.body ?? '';\n  const html = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\n  let nota = 0;\n  const faltando = [];\n\n  // 1. <title> (+25)\n  const hasTitle = /<title[^>]*>[\\s\\S]+?<\\/title>/i.test(html);\n  if (hasTitle) { nota += 25; } else { faltando.push('title'); }\n\n  // 2. <meta property=\"og:image\" (+25)\n  const hasOgImage = /<meta[^>]+property=[\"']og:image[\"'][^>]*>/i.test(html);\n  if (hasOgImage) { nota += 25; } else { faltando.push('og:image'); }\n\n  // 3. <meta property=\"og:price:amount\" (+25)\n  const hasOgPrice = /<meta[^>]+property=[\"']og:price:amount[\"'][^>]*>/i.test(html);\n  if (hasOgPrice) { nota += 25; } else { faltando.push('og:price:amount'); }\n\n  // 4. <script type=\"application/ld+json\" (+25)\n  const hasJsonLd = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>/i.test(html);\n  if (hasJsonLd) { nota += 25; } else { faltando.push('json-ld'); }\n\n  if (nota > 100) nota = 100;\n\n  // Status\n  let status = 'Crítico';\n  if (nota >= 75) status = 'Pronto';\n  else if (nota >= 50) status = 'Básico';\n\n  // Tenta extrair nome/preco/imagem reais do HTML para o JSON-LD sugerido\n  let prodName = 'Produto exemplo';\n  let prodImage = 'https://exemplo.com/imagem.jpg';\n  const mTitle = html.match(/<title[^>]*>([^<]+)<\\/title>/i);\n  if (mTitle && mTitle[1]) prodName = mTitle[1].trim().substring(0, 150);\n  const mImg = html.match(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']/i);\n  if (mImg && mImg[1]) prodImage = mImg[1];\n\n  // JSON-LD sugerido (sempre gerado; se ja tem schema, serve como modelo padrao)\n  const jsonLd = {\n    '@context': 'https://schema.org',\n    '@type': 'Product',\n    'name': prodName,\n    'image': prodImage,\n    'description': 'Descricao do produto em ' + url,\n    'brand': { '@type': 'Brand', 'name': 'Marca do produto' },\n    'offers': {\n      '@type': 'Offer',\n      'url': url,\n      'priceCurrency': 'BRL',\n      'price': '0.00',\n      'availability': 'https://schema.org/InStock'\n    }\n  };\n\n  results.push({\n    json: {\n      url: url,\n      nota: nota,\n      status: status,\n      faltando: faltando.join(', '),\n      json_ld_sugerido: JSON.stringify(jsonLd)\n    }\n  });\n}\n\nreturn results;", "mode": "runOnceForAllItems"}, "position": [680, 300], "type": "n8n-nodes-base.code", "typeVersion": 2}, {"id": "d4e5f6a7-spreadsheet-004", "name": "Salvar CSV", "parameters": {"fileFormat": "csv", "fileName": "resultados_auditoria.csv", "operation": "write", "options": {}}, "position": [900, 300], "type": "n8n-nodes-base.spreadsheetFile", "typeVersion": 2}], "pinData": {"Manual Trigger": [{"url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"}, {"url": "https://www.amazon.com.br/dp/B09B8V1LZ3"}, {"url": "https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/"}]}, "settings": {"executionOrder": "v1"}, "staticData": null}
+{
+  "active": false,
+  "connections": {
+    "Auditoria ProntoPraIA": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Salvar CSV",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Buscar HTML Produto": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Auditoria ProntoPraIA",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Buscar HTML Produto",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Salvar CSV": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gerar PDF",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "ProntoPraIA - Auditoria de Produto",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-manual-trigger-001",
+      "name": "Manual Trigger",
+      "parameters": {},
+      "position": [
+        240,
+        300
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b2c3d4e5-http-request-002",
+      "name": "Buscar HTML Produto",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ProntoPraIA-Auditor/1.0"
+            }
+          ]
+        },
+        "method": "GET",
+        "options": {
+          "response": {
+            "response": {
+              "outputPropertyName": "data",
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "url": "={{ $json.url }}"
+      },
+      "position": [
+        460,
+        300
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "id": "c3d4e5f6-code-audit-003",
+      "name": "Auditoria ProntoPraIA",
+      "parameters": {
+        "js": "// ProntoPraIA - No de auditoria: recebe HTML do no HTTP Request e calcula nota 0-100\nconst results = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  const url = j.url || j.URL || 'URL desconhecida';\n  // O HTTP Request com responseFormat=text devolve o HTML em `data`\n  const raw = j.data ?? j.html ?? j.body ?? '';\n  const html = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\n  let nota = 0;\n  const faltando = [];\n\n  // 1. <title> (+25)\n  const hasTitle = /<title[^>]*>[\\s\\S]+?<\\/title>/i.test(html);\n  if (hasTitle) { nota += 25; } else { faltando.push('title'); }\n\n  // 2. <meta property=\"og:image\" (+25)\n  const hasOgImage = /<meta[^>]+property=[\"']og:image[\"'][^>]*>/i.test(html);\n  if (hasOgImage) { nota += 25; } else { faltando.push('og:image'); }\n\n  // 3. <meta property=\"og:price:amount\" (+25)\n  const hasOgPrice = /<meta[^>]+property=[\"']og:price:amount[\"'][^>]*>/i.test(html);\n  if (hasOgPrice) { nota += 25; } else { faltando.push('og:price:amount'); }\n\n  // 4. <script type=\"application/ld+json\" (+25)\n  const hasJsonLd = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>/i.test(html);\n  if (hasJsonLd) { nota += 25; } else { faltando.push('json-ld'); }\n\n  if (nota > 100) nota = 100;\n\n  // Status\n  let status = 'Crítico';\n  if (nota >= 75) status = 'Pronto';\n  else if (nota >= 50) status = 'Básico';\n\n  // Tenta extrair nome/preco/imagem reais do HTML para o JSON-LD sugerido\n  let prodName = 'Produto exemplo';\n  let prodImage = 'https://exemplo.com/imagem.jpg';\n  const mTitle = html.match(/<title[^>]*>([^<]+)<\\/title>/i);\n  if (mTitle && mTitle[1]) prodName = mTitle[1].trim().substring(0, 150);\n  const mImg = html.match(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']/i);\n  if (mImg && mImg[1]) prodImage = mImg[1];\n\n  // JSON-LD sugerido (sempre gerado; se ja tem schema, serve como modelo padrao)\n  const jsonLd = {\n    '@context': 'https://schema.org',\n    '@type': 'Product',\n    'name': prodName,\n    'image': prodImage,\n    'description': 'Descricao do produto em ' + url,\n    'brand': { '@type': 'Brand', 'name': 'Marca do produto' },\n    'offers': {\n      '@type': 'Offer',\n      'url': url,\n      'priceCurrency': 'BRL',\n      'price': '0.00',\n      'availability': 'https://schema.org/InStock'\n    }\n  };\n\n  results.push({\n    json: {\n      url: url,\n      nota: nota,\n      status: status,\n      faltando: faltando.join(', '),\n      json_ld_sugerido: JSON.stringify(jsonLd)\n    }\n  });\n}\n\nreturn results;",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [
+        680,
+        300
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "d4e5f6a7-spreadsheet-004",
+      "name": "Salvar CSV",
+      "parameters": {
+        "fileFormat": "csv",
+        "fileName": "resultados_auditoria.csv",
+        "operation": "write",
+        "options": {}
+      },
+      "position": [
+        900,
+        300
+      ],
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2
+    },
+    {
+      "id": "e5f6a7b8-exec-pdf-005",
+      "name": "Gerar PDF",
+      "parameters": {
+        "command": "node gerar-relatorio-pdf.js",
+        "executeOnce": true
+      },
+      "position": [
+        1120,
+        300
+      ],
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {
+    "Manual Trigger": [
+      {
+        "url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"
+      },
+      {
+        "url": "https://www.amazon.com.br/dp/B09B8V1LZ3"
+      },
+      {
+        "url": "https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/"
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null
+}

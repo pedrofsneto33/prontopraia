@@ -1,0 +1,1 @@
+{"dependencies": {"csvtojson": "^2.0.10", "pdfmake": "^0.2.10"}, "description": "ProntoPraIA - auditoria de prontidão para agentes de IA", "name": "prontopraia", "private": true, "scripts": {"relatorio": "node gerar-relatorio-pdf.js"}, "version": "1.0.0"}
