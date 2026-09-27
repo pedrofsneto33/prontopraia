@@ -15,6 +15,37 @@ const LIME = '#b6f542';
 const CYAN = '#2ed6e6';
 const DARK = '#0f172a';
 const MUTED = '#64748b';
+const ALERT = '#d97706'; // laranja/amarelo p/ alertas de erro HTTP
+
+// --- Helpers de erro HTTP (apenas exibicao; nao alteram nota) ---
+// Detecta o codigo HTTP (403/404/500/...) dentro do campo "faltando" do CSV.
+function detectHttpCode(faltando) {
+  const s = String(faltando || '');
+  const m = s.match(/erro-http:\s*(\d{3})/i) || s.match(/\b(40[0-9]|4[0-3][0-9]|5[0-9]{2})\b/);
+  return m ? m[1] : null;
+}
+
+function isBlocked403(faltando) {
+  const s = String(faltando || '').toLowerCase();
+  return s.includes('erro-http: 403') || s.includes('bloqueio de segurança');
+}
+
+// Recomendacao consultiva por codigo de erro (argumento de venda).
+function recomendacaoPorErro(code) {
+  if (code === '403') return 'Configurar exceções no firewall para bots legítimos de IA (GPTBot, Google-Extended, PerplexityBot).';
+  if (code === '404') return 'URL quebrada ou produto removido. Verificar se o link está correto.';
+  if (code && code.startsWith('5')) return 'Erro interno do servidor. Contatar a equipe técnica do e-commerce.';
+  if (code) return 'Falha HTTP ' + code + '. Verificar URL, robots.txt e regras do firewall.';
+  return 'HTML vazio ou sem dados. Verificar bloqueio anti-bot, timeout ou URL inválida.';
+}
+
+// Texto consultivo exibido na tabela p/ erro 403 (em vez do cru "erro-http: 403").
+function faltandoDisplay(faltando) {
+  if (isBlocked403(faltando)) return '⚠️ Bloqueio de Segurança Detectado (HTTP 403)';
+  return faltando;
+}
+
+const NOTA_403 = 'O servidor está recusando conexões de agentes automatizados. Isso pode indicar que o firewall (ex: Cloudflare) está bloqueando não apenas bots maliciosos, mas também rastreadores legítimos do Google, ChatGPT e Gemini. Ajustes nas regras de robots.txt e cabeçalhos de segurança são recomendados.';
 
 // pdfmake (Node) com as 14 fontes padrao do PDF - sem arquivos .ttf externos.
 const fonts = {
@@ -110,12 +141,36 @@ async function main() {
     ]
   ];
   for (const r of rows) {
-    tableBody.push([
-      { text: r.url || '—', style: 'tdUrl' },
-      { text: String(r.nota), style: 'tdCenter', color: statusColor(r.status), bold: true },
-      { text: r.status, style: 'tdCenter' },
-      { text: r.faltando, style: 'td' }
-    ]);
+    const code = detectHttpCode(r.faltando);
+    if (isBlocked403(r.faltando)) {
+      // Linha principal do produto com alerta consultivo (laranja) ...
+      tableBody.push([
+        { text: r.url || '—', style: 'tdUrl' },
+        { text: String(r.nota), style: 'tdCenter', color: statusColor(r.status), bold: true },
+        { text: r.status, style: 'tdCenter' },
+        { text: faltandoDisplay(r.faltando), style: 'tdAlert', color: ALERT, bold: true }
+      ]);
+      // ... + linha de nota explicativa ocupando as 4 colunas.
+      tableBody.push([
+        { text: NOTA_403, colSpan: 4, style: 'tdNote', color: '#92400e' },
+        {}, {}, {}
+      ]);
+    } else if (code) {
+      // Outros erros HTTP: destaca o codigo sem a nota longa do 403.
+      tableBody.push([
+        { text: r.url || '—', style: 'tdUrl' },
+        { text: String(r.nota), style: 'tdCenter', color: statusColor(r.status), bold: true },
+        { text: r.status, style: 'tdCenter' },
+        { text: '⚠️ Erro HTTP ' + code + ' — ' + r.faltando, style: 'td', color: ALERT }
+      ]);
+    } else {
+      tableBody.push([
+        { text: r.url || '—', style: 'tdUrl' },
+        { text: String(r.nota), style: 'tdCenter', color: statusColor(r.status), bold: true },
+        { text: r.status, style: 'tdCenter' },
+        { text: r.faltando, style: 'td' }
+      ]);
+    }
   }
   if (total === 0) {
     tableBody.push([
@@ -127,6 +182,34 @@ async function main() {
   const exemploJsonLd = total > 0
     ? prettyJsonLd(rows[0].jsonLd)
     : '// Rode o workflow do n8n para gerar resultados_auditoria.csv primeiro.';
+
+  // --- Secao "Notas Tecnicas e Recomendacoes" (antes do apendice) ---
+  // Lista todos os produtos com erro HTTP + recomendacao consultiva por codigo.
+  const errosHttp = rows
+    .map(r => ({ url: r.url, code: detectHttpCode(r.faltando), raw: r.faltando }))
+    .filter(e => e.code);
+  const notasContent = errosHttp.length === 0
+    ? [
+        { text: 'Notas Técnicas e Recomendações', style: 'h2' },
+        { text: 'Nenhum erro HTTP detectado nesta auditoria. Todos os produtos responderam normalmente.', fontSize: 9, color: MUTED, margin: [0, 0, 0, 12] }
+      ]
+    : [
+        { text: 'Notas Técnicas e Recomendações', style: 'h2' },
+        {
+          text: 'Os produtos abaixo recusaram a conexao automatizada. Longe de ser apenas um problema tecnico, isso e um sinal de alerta comercial: se o firewall bloqueia nossa auditoria, ele provavelmente tambem bloqueia os rastreadores do Google, ChatGPT e Gemini — e seus produtos ficam invisiveis para a IA.',
+          fontSize: 9,
+          color: '#334155',
+          margin: [0, 0, 0, 6]
+        },
+        {
+          ul: errosHttp.map(e => ([
+            { text: '⚠️ ' + (e.url || 'URL desconhecida') + ' — Erro ' + e.code + '\n', bold: true, color: ALERT },
+            { text: recomendacaoPorErro(e.code) + '\n', color: '#334155' }
+          ])),
+          fontSize: 9,
+          margin: [0, 0, 0, 12]
+        }
+      ];
 
 //__PART3__
   const docDefinition = {
@@ -222,6 +305,7 @@ async function main() {
         },
         margin: [0, 0, 0, 12]
       },
+      ...notasContent,
       { text: 'Apêndice - Exemplo de JSON-LD Sugerido', style: 'h2' },
       {
         text: 'Cole este bloco na página do produto (dentro de script application/ld+json) para ajudar as IAs a entenderem preco, imagem e disponibilidade.',
@@ -237,7 +321,9 @@ async function main() {
       td: { fontSize: 8.5, color: '#334155' },
       tdUrl: { fontSize: 8, color: '#0369a1' },
       tdCenter: { fontSize: 9, alignment: 'center' },
-      tdEmpty: { fontSize: 9, italics: true, color: MUTED }
+      tdEmpty: { fontSize: 9, italics: true, color: MUTED },
+      tdAlert: { fontSize: 8.5, color: '#92400e' },
+      tdNote: { fontSize: 7.5, italics: true, color: '#92400e' }
     }
   };
 
