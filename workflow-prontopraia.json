@@ -128,10 +128,22 @@
           "response": {
             "response": {
               "outputPropertyName": "data",
-              "responseFormat": "text"
+              "responseFormat": "text",
+              "fullResponse": true
             }
           },
-          "timeout": 30000
+          "timeout": 30000,
+          "ignoreHttpStatusErrors": true,
+          "neverError": true
+        },
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 2000,
+        "batching": {
+          "batch": {
+            "batchSize": 3,
+            "batchInterval": 500
+          }
         }
       }
     },
@@ -146,23 +158,21 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Auditoria robusta p/ lote: tolera HTML vazio, erro HTTP (Continue On Fail) e timeout.\nconst results = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const url = j.url || j.URL || 'URL desconhecida';\n  const raw = j.data ?? j.html ?? j.body ?? '';\n  const html = typeof raw === 'string' ? raw : (raw ? JSON.stringify(raw) : '');\n  const erroHttp = j.error || item.error || null;\n  let nota = 0;\n  const faltando = [];\n  const hasTitle = /<title[^>]*>[\\s\\S]+?<\\/title>/i.test(html);\n  if (hasTitle) { nota += 25; } else { faltando.push('title'); }\n  const hasOgImage = /<meta[^>]+property=[\"']og:image[\"'][^>]*>/i.test(html);\n  if (hasOgImage) { nota += 25; } else { faltando.push('og:image'); }\n  const hasOgPrice = /<meta[^>]+property=[\"']og:price:amount[\"'][^>]*>/i.test(html);\n  if (hasOgPrice) { nota += 25; } else { faltando.push('og:price:amount'); }\n  const hasJsonLd = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>/i.test(html);\n  if (hasJsonLd) { nota += 25; } else { faltando.push('json-ld'); }\n  if (nota > 100) nota = 100;\n  let status = 'Crítico';\n  if (nota >= 75) status = 'Pronto';\n  else if (nota >= 50) status = 'Básico';\n  if (!html || html.trim() === '') {\n    nota = 0; status = 'Crítico';\n    if (erroHttp) faltando.push('erro-http: ' + String(erroHttp).substring(0, 80));\n    else if (!faltando.includes('html-vazio')) faltando.push('html-vazio (bloqueio/timeout?)');\n  }\n  let prodName = 'Produto exemplo';\n  let prodImage = 'https://exemplo.com/imagem.jpg';\n  const mTitle = html.match(/<title[^>]*>([^<]+)<\\/title>/i);\n  if (mTitle && mTitle[1]) prodName = mTitle[1].trim().substring(0, 150);\n  const mImg = html.match(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']/i);\n  if (mImg && mImg[1]) prodImage = mImg[1];\n  const jsonLd = {\n    '@context': 'https://schema.org',\n    '@type': 'Product',\n    'name': prodName,\n    'image': prodImage,\n    'description': 'Descricao do produto em ' + url,\n    'brand': { '@type': 'Brand', 'name': 'Marca do produto' },\n    'offers': { '@type': 'Offer', 'url': url, 'priceCurrency': 'BRL', 'price': '0.00', 'availability': 'https://schema.org/InStock' }\n  };\n  results.push({ json: { url, nota, status, faltando: faltando.join(', '), json_ld_sugerido: JSON.stringify(jsonLd) } });\n}\nreturn results;"
+        "js": "// ProntoPraIA - Auditoria robusta p/ lote: tolera HTML vazio, erro HTTP (fullResponse) e timeout.\r\nconst results = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  const url = j.url || j.URL || 'URL desconhecida';\r\n  // Com fullResponse:true o HTTP Request devolve { body, statusCode, headers } em `data`.\r\n  const statusCode = j.data?.statusCode || j.statusCode || null;\r\n  const bodyRaw = (j.data && typeof j.data === 'object' && j.data.body !== undefined) ? j.data.body : (j.data ?? j.html ?? j.body ?? '');\r\n  const html = typeof bodyRaw === 'string' ? bodyRaw : (bodyRaw ? JSON.stringify(bodyRaw) : '');\r\n  const erroHttp = statusCode || j.error || item.error || null;\r\n  // <title> buscado apenas dentro do <head> (evita falso-positivo do body).\r\n  const headMatch = html.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\r\n  const headHtml = headMatch ? headMatch[1] : html;\r\n  let nota = 0;\r\n  const faltando = [];\r\n  const hasTitle = /<title[^>]*>[\\s\\S]+?<\\/title>/i.test(headHtml);\r\n  if (hasTitle) { nota += 25; } else { faltando.push('title'); }\r\n  const hasOgImage = /<meta[^>]+property=[\"']og:image[\"'][^>]*>/i.test(html);\r\n  if (hasOgImage) { nota += 25; } else { faltando.push('og:image'); }\r\n  const hasOgPrice = /<meta[^>]+property=[\"']og:price:amount[\"'][^>]*>/i.test(html);\r\n  if (hasOgPrice) { nota += 25; } else { faltando.push('og:price:amount'); }\r\n  const hasJsonLd = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>/i.test(html);\r\n  if (hasJsonLd) { nota += 25; } else { faltando.push('json-ld'); }\r\n  if (nota > 100) nota = 100;\r\n  let status = 'Crítico';\r\n  if (nota >= 75) status = 'Pronto';\r\n  else if (nota >= 50) status = 'Básico';\r\n  // Status code >= 400 vira 'erro-http: <code>' p/ o PDF consultivo detectar 403/404/500.\r\n  if (typeof statusCode === 'number' && statusCode >= 400 && !faltando.some(f => f.includes('erro-http: ' + statusCode))) {\r\n    faltando.push('erro-http: ' + statusCode);\r\n  }\r\n  if (!html || html.trim() === '') {\r\n    nota = 0; status = 'Crítico';\r\n    if (statusCode) { /* ja registrado acima */ }\r\n    else if (erroHttp) faltando.push('erro-http: ' + String(erroHttp).substring(0, 80));\r\n    else if (!faltando.includes('html-vazio')) faltando.push('html-vazio (bloqueio/timeout?)');\r\n  }\r\n  let prodName = 'Produto exemplo';\r\n  let prodImage = 'https://exemplo.com/imagem.jpg';\r\n  const mTitle = headHtml.match(/<title[^>]*>([^<]+)<\\/title>/i);\r\n  if (mTitle && mTitle[1]) prodName = mTitle[1].trim().substring(0, 150);\r\n  const mImg = html.match(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']/i);\r\n  if (mImg && mImg[1]) prodImage = mImg[1];\r\n  const jsonLd = {\r\n    '@context': 'https://schema.org',\r\n    '@type': 'Product',\r\n    'name': prodName,\r\n    'image': prodImage,\r\n    'description': 'Descricao do produto em ' + url,\r\n    'brand': { '@type': 'Brand', 'name': 'Marca do produto' },\r\n    'offers': { '@type': 'Offer', 'url': url, 'priceCurrency': 'BRL', 'price': '0.00', 'availability': 'https://schema.org/InStock' }\r\n  };\r\n  results.push({ json: { url, nota, status, faltando: faltando.join(', '), json_ld_sugerido: JSON.stringify(jsonLd) } });\r\n}\r\nreturn results;\r\n"
       }
     },
     {
-      "id": "d4e5f6a7-spreadsheet-004",
+      "id": "d4e5f6a7-save-csv-code-004",
       "name": "Salvar CSV",
-      "type": "n8n-nodes-base.spreadsheetFile",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1120,
         300
       ],
       "parameters": {
-        "operation": "append",
-        "fileName": "resultados_auditoria.csv",
-        "fileFormat": "csv",
-        "options": {}
+        "mode": "runOnceForAllItems",
+        "js": "// ProntoPraIA - Persistencia confiavel do CSV via fs.appendFileSync (append real, local).\r\nconst fs = require('fs');\r\nconst path = require('path');\r\nconst CSV_PATH = path.join(process.cwd(), 'resultados_auditoria.csv');\r\nconst HEADER = 'url,nota,status,faltando,json_ld_sugerido';\r\n// Neutraliza injecao de formula (CSV injection) e envolve em aspas quando necessario.\r\nfunction csvEscape(v) {\r\n  let s = String(v ?? '');\r\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\r\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\r\n  return s;\r\n}\r\nconst lines = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  lines.push([csvEscape(j.url), csvEscape(j.nota), csvEscape(j.status), csvEscape(j.faltando), csvEscape(j.json_ld_sugerido)].join(','));\r\n}\r\nif (!fs.existsSync(CSV_PATH)) fs.writeFileSync(CSV_PATH, HEADER + '\\n', 'utf8');\r\nif (lines.length) fs.appendFileSync(CSV_PATH, lines.join('\\n') + '\\n', 'utf8');\r\nreturn [{ json: { csv: CSV_PATH, linhas_adicionadas: lines.length } }];\r\n"
       }
     },
     {
