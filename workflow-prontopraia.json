@@ -114,7 +114,7 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Persistencia confiavel do CSV via fs.appendFileSync (append real, local).\r\nconst fs = require('fs');\r\nconst path = require('path');\r\nconst CSV_PATH = path.join(process.cwd(), 'resultados_auditoria.csv');\r\nconst HEADER = 'url,nota,status,faltando,json_ld_sugerido';\r\nconst filePath = CSV_PATH;\r\n// Neutraliza injecao de formula (CSV injection) e envolve em aspas quando necessario.\r\nfunction csvEscape(v) {\r\n  let s = String(v ?? '');\r\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\r\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\r\n  return s;\r\n}\r\nconst lines = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  const description = String(j.faltando ?? '');\r\n  lines.push([csvEscape(j.url), csvEscape(j.nota), csvEscape(j.status), csvEscape(description), csvEscape(j.json_ld_sugerido)].join(','));\r\n}\r\nif (!fs.existsSync(filePath)) fs.writeFileSync(filePath, HEADER + '\\n', 'utf8');\r\nif (lines.length) fs.appendFileSync(filePath, lines.join('\\n') + '\\n', 'utf8');\r\nreturn [{ json: { csv: filePath, linhas_adicionadas: lines.length } }];\r\n"
+        "js": "// ProntoPraIA - Persistencia confiavel do CSV via fs.appendFileSync (append real, local).\r\nconst fs = require('fs');\r\nconst path = require('path');\r\nconst CSV_PATH = 'C:\\\\Users\\\\User\\\\Desktop\\\\prontopraia\\\\resultados_auditoria.csv';\r\nconst HEADER = 'url,nota,status,faltando,json_ld_sugerido';\r\nconst filePath = 'C:\\\\Users\\\\User\\\\Desktop\\\\prontopraia\\\\resultados_auditoria.csv';\r\n// Neutraliza injecao de formula (CSV injection) e envolve em aspas quando necessario.\r\nfunction csvEscape(v) {\r\n  let s = String(v ?? '');\r\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\r\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\r\n  return s;\r\n}\r\nconst lines = [];\r\nfor (const item of $input.all()) {\r\n  const j = item.json || {};\r\n  const description = String(j.faltando ?? '');\r\n  lines.push([csvEscape(j.url), csvEscape(j.nota), csvEscape(j.status), csvEscape(description), csvEscape(j.json_ld_sugerido)].join(','));\r\n}\r\nif (!fs.existsSync(filePath)) fs.writeFileSync(filePath, HEADER + '\\n', 'utf8');\r\nif (lines.length) fs.appendFileSync(filePath, lines.join('\\n') + '\\n', 'utf8');\r\nreturn [{ json: { csv: filePath, linhas_adicionadas: lines.length } }];\r\n"
       }
     },
     {
@@ -142,7 +142,7 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "js": "const { exec } = require('child_process');\r\nreturn new Promise((resolve) => {\r\n  exec('node gerar-relatorio-pdf.js', (error, stdout) => {\r\n    resolve([{ json: { success: !error, output: stdout } }]);\r\n  });\r\n});\r\n"
+        "js": "const { exec } = require('child_process');\nreturn new Promise((resolve) => {\n  exec('node C:\\\\Users\\\\User\\\\Desktop\\\\prontopraia\\\\gerar-relatorio-pdf.js', (error, stdout, stderr) => {\n    resolve([{ json: { success: !error, output: stdout, error: error ? error.message : null } }]);\n  });\n});\n"
       }
     }
   ],

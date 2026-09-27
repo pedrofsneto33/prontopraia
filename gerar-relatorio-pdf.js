@@ -8,8 +8,11 @@ const path = require('path');
 const csv = require('csvtojson');
 const PdfPrinter = require('pdfmake');
 
-const CSV_PATH = path.join(__dirname, 'resultados_auditoria.csv');
-const PDF_PATH = path.join(__dirname, 'Relatorio_Auditoria_ProntoPraIA.pdf');
+const PROJECT_DIR = 'C:\\Users\\User\\Desktop\\prontopraia';
+const CSV_PATH = PROJECT_DIR + '\\resultados_auditoria.csv';
+const PDF_PATH = PROJECT_DIR + '\\Relatorio_Auditoria_ProntoPraIA.pdf';
+// Caminho absoluto exigido pelo n8n (process.cwd() pega o dir errado do n8n).
+const csvPath = 'C:\\Users\\User\\Desktop\\prontopraia\\resultados_auditoria.csv';
 
 const LIME = '#b6f542';
 const CYAN = '#2ed6e6';
