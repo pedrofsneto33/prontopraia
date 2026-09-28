@@ -1,84 +1,8 @@
 {
-  "active": false,
-  "connections": {
-    "Manual Trigger": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Dividir em Lotes",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Dividir em Lotes": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Buscar HTML Produto",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Gerar PDF",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Buscar HTML Produto": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Auditoria ProntoPraIA",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Auditoria ProntoPraIA": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Salvar CSV",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Salvar CSV": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Aguardar 3s",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Aguardar 3s": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Dividir em Lotes",
-            "type": "main"
-          }
-        ]
-      ]
-    }
-  },
-  "name": "ProntoPraIA - Auditoria de Produto",
+  "name": "ProntoPraIA - Auditoria (v3)",
   "nodes": [
     {
-      "id": "a1b2c3d4-manual-trigger-001",
+      "id": "trigger-1",
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1.1,
@@ -86,117 +10,30 @@
       "parameters": {}
     },
     {
-      "id": "f1a2b3c4-split-batches-006",
-      "name": "Dividir em Lotes",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [460, 300],
+      "id": "exec-audit",
+      "name": "Rodar Auditoria",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 300],
       "parameters": {
-        "batchSize": 10,
-        "options": {}
+        "command": "node C:\\Users\\User\\Desktop\\prontopraia\\auditoria-batch.js"
       }
     },
     {
-      "id": "b2c3d4e5-http-request-002",
-      "name": "Buscar HTML Produto",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [680, 300],
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 2000,
-      "parameters": {
-        "method": "GET",
-        "url": "={{ $json.url }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "User-Agent",
-              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-            }
-          ]
-        },
-        "options": {
-          "response": {
-            "response": {
-              "outputPropertyName": "data",
-              "responseFormat": "text",
-              "fullResponse": true
-            }
-          },
-          "ignoreHttpStatusErrors": true,
-          "timeout": 30000,
-          "batching": {
-            "batch": {
-              "batchSize": 3,
-              "batchInterval": 500
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "c3d4e5f6-code-audit-003",
-      "name": "Auditoria ProntoPraIA",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [900, 300],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Auditoria robusta\nconst results = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const url = j.url || j.URL || 'URL desconhecida';\n  const resp = j.data || {};\n  const statusCode = resp.statusCode || j.statusCode || null;\n  const raw = resp.body !== undefined ? resp.body : (j.html ?? j.body ?? '');\n  const html = typeof raw === 'string' ? raw : (raw ? JSON.stringify(raw) : '');\n  const erroHttp = (statusCode && statusCode >= 400) ? String(statusCode) : (j.error || item.error || null);\n  let nota = 0;\n  const faltando = [];\n  const headMatch = html.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\n  const headHtml = headMatch ? headMatch[1] : html;\n  const hasTitle = /<title[^>]*>[\\s\\S]+?<\\/title>/i.test(headHtml);\n  if (hasTitle) { nota += 25; } else { faltando.push('title'); }\n  const hasOgImage = /<meta[^>]+property=[\"']og:image[\"'][^>]*>/i.test(html);\n  if (hasOgImage) { nota += 25; } else { faltando.push('og:image'); }\n  const hasOgPrice = /<meta[^>]+property=[\"']og:price:amount[\"'][^>]*>/i.test(html);\n  if (hasOgPrice) { nota += 25; } else { faltando.push('og:price:amount'); }\n  const hasJsonLd = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>/i.test(html);\n  if (hasJsonLd) { nota += 25; } else { faltando.push('json-ld'); }\n  if (nota > 100) nota = 100;\n  let status = 'Crítico';\n  if (nota >= 75) status = 'Pronto';\n  else if (nota >= 50) status = 'Básico';\n  if (!html || html.trim() === '') {\n    nota = 0; status = 'Crítico';\n    if (erroHttp) faltando.push('erro-http: ' + String(erroHttp).substring(0, 80));\n    else if (!faltando.includes('html-vazio')) faltando.push('html-vazio (bloqueio/timeout?)');\n  } else if (erroHttp) {\n    faltando.push('erro-http: ' + String(erroHttp).substring(0, 80));\n  }\n  let prodName = 'Produto exemplo';\n  let prodImage = 'https://exemplo.com/imagem.jpg';\n  const mTitle = headHtml.match(/<title[^>]*>([^<]+)<\\/title>/i);\n  if (mTitle && mTitle[1]) prodName = mTitle[1].trim().substring(0, 150);\n  const mImg = html.match(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']/i);\n  if (mImg && mImg[1]) prodImage = mImg[1];\n  const jsonLd = {\n    '@context': 'https://schema.org',\n    '@type': 'Product',\n    'name': prodName,\n    'image': prodImage,\n    'description': 'Descricao do produto em ' + url,\n    'brand': { '@type': 'Brand', 'name': 'Marca do produto' },\n    'offers': { '@type': 'Offer', 'url': url, 'priceCurrency': 'BRL', 'price': '0.00', 'availability': 'https://schema.org/InStock' }\n  };\n  results.push({ json: { url, nota, status, faltando: faltando.join(', '), json_ld_sugerido: JSON.stringify(jsonLd) } });\n}\nreturn results;"
-      }
-    },
-    {
-      "id": "d4e5f6a7-code-savecsv-004",
-      "name": "Salvar CSV",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1120, 300],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Salvar CSV com caminho absoluto\nconst fs = require('fs');\nconst filePath = 'C:\\\\Users\\\\User\\\\Desktop\\\\prontopraia\\\\resultados_auditoria.csv';\n\nfunction csvEscape(v) {\n  let s = String(v ?? '');\n  if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n  if (/[\"\\n,]/.test(s)) s = '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  return s;\n}\n\nconst header = 'url,nota,status,faltando,json_ld_sugerido\\n';\nif (!fs.existsSync(filePath)) {\n  fs.writeFileSync(filePath, header);\n}\n\nconst items = $input.all();\nconst lines = items.map(item => {\n  const j = item.json || {};\n  return [j.url, j.nota, j.status, j.faltando, j.json_ld_sugerido].map(csvEscape).join(',');\n}).join('\\n') + '\\n';\n\nfs.appendFileSync(filePath, lines);\nreturn items;"
-      }
-    },
-    {
-      "id": "g7h8i9j0-wait-007",
-      "name": "Aguardar 3s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [1340, 300],
-      "parameters": {
-        "amount": 3,
-        "unit": "seconds"
-      }
-    },
-    {
-      "id": "e5f6a7b8-code-pdf-005",
+      "id": "exec-pdf",
       "name": "Gerar PDF",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [460, 520],
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [720, 300],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "js": "// ProntoPraIA - Gerar PDF\nconst { exec } = require('child_process');\nreturn new Promise((resolve) => {\n  exec('node C:\\\\Users\\\\User\\\\Desktop\\\\prontopraia\\\\gerar-relatorio-pdf.js', (error, stdout, stderr) => {\n    if (error) {\n      resolve([{ json: { success: false, error: error.message, stdout, stderr } }]);\n      return;\n    }\n    resolve([{ json: { success: true, output: stdout } }]);\n  });\n});"
+        "command": "node C:\\Users\\User\\Desktop\\prontopraia\\gerar-relatorio-pdf.js"
       }
     }
   ],
-  "pinData": {
-    "Manual Trigger": [
-      {
-        "url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"
-      },
-      {
-        "url": "https://www.amazon.com.br/dp/B09B8V1LZ3"
-      },
-      {
-        "url": "https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/"
-      }
-    ]
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Rodar Auditoria", "type": "main", "index": 0 }]] },
+    "Rodar Auditoria": { "main": [[{ "node": "Gerar PDF", "type": "main", "index": 0 }]] }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null
+  "settings": { "executionOrder": "v1" },
+  "active": false
 }

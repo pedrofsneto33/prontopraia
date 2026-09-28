@@ -1,1 +1,4 @@
-﻿url,nota,status,faltando,json_ld_sugerido
+url,nota,status,faltando,json_ld_sugerido
+https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111,75,Pronto,og:price:amount,"{""@context"":""https://schema.org"",""@type"":""Product"",""name"":""Nike Air Force 1 '07 Men's Shoes. Nike.com"",""image"":""https://static.nike.com/a/images/t_default/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/b7d9211c-26e7-431a-ac24-b0540fb3c00f/AIR+FORCE+1+%2707.png"",""description"":""Descricao do produto em https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"",""brand"":{""@type"":""Brand"",""name"":""Marca do produto""},""offers"":{""@type"":""Offer"",""url"":""https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111"",""priceCurrency"":""BRL"",""price"":""0.00"",""availability"":""https://schema.org/InStock""}}"
+https://www.amazon.com.br/dp/B09B8V1LZ3,0,Crítico,erro-http: 404,
+https://www.magazineluiza.com.br/smartphone-samsung-galaxy-a15-128gb-azul-4gb-ram-50mp/p/jf12345678/,0,Bloqueado,WAF/anti-bot bloqueou o acesso (não auditável sem proxy residencial),
